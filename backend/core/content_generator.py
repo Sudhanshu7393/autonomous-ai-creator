@@ -123,16 +123,30 @@ class ContentGenerator:
         )
 
         def _sync_call() -> str:
-            response = self._client.chat.completions.create(
-                model=self._settings.groq_model,
-                max_tokens=1024,
-                temperature=0.3,
-                messages=[
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": user},
-                ],
-            )
-            return response.choices[0].message.content or ""
+            model_to_use = self._settings.groq_model
+            try:
+                response = self._client.chat.completions.create(
+                    model=model_to_use,
+                    max_tokens=1024,
+                    temperature=0.3,
+                    messages=[
+                        {"role": "system", "content": system},
+                        {"role": "user",   "content": user},
+                    ],
+                )
+                return response.choices[0].message.content or ""
+            except Exception as err:
+                logger.warning(f"Content generation failed on {model_to_use}, falling back to llama-3.1-8b-instant: {err}")
+                response = self._client.chat.completions.create(
+                    model="llama-3.1-8b-instant",
+                    max_tokens=1024,
+                    temperature=0.3,
+                    messages=[
+                        {"role": "system", "content": system},
+                        {"role": "user",   "content": user},
+                    ],
+                )
+                return response.choices[0].message.content or ""
 
         raw = await asyncio.to_thread(_sync_call)
         post = self._parse_and_validate(raw, topic)

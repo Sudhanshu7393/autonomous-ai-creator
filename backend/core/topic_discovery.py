@@ -215,16 +215,30 @@ class TopicDiscoveryService:
         )
 
         def _sync_call() -> str:
-            response = self._groq.chat.completions.create(
-                model=self._settings.groq_model,
-                max_tokens=3000,
-                temperature=0.2,
-                messages=[
-                    {"role": "system", "content": system},
-                    {"role": "user",   "content": user},
-                ],
-            )
-            return response.choices[0].message.content or ""
+            model_to_use = self._settings.groq_model
+            try:
+                response = self._groq.chat.completions.create(
+                    model=model_to_use,
+                    max_tokens=3000,
+                    temperature=0.2,
+                    messages=[
+                        {"role": "system", "content": system},
+                        {"role": "user",   "content": user},
+                    ],
+                )
+                return response.choices[0].message.content or ""
+            except Exception as err:
+                logger.warning(f"Groq call failed on {model_to_use}, falling back to llama-3.1-8b-instant: {err}")
+                response = self._groq.chat.completions.create(
+                    model="llama-3.1-8b-instant",
+                    max_tokens=3000,
+                    temperature=0.2,
+                    messages=[
+                        {"role": "system", "content": system},
+                        {"role": "user",   "content": user},
+                    ],
+                )
+                return response.choices[0].message.content or ""
 
         raw_text = await asyncio.to_thread(_sync_call)
         logger.debug("Groq structuring complete", extra={"length": len(raw_text)})
