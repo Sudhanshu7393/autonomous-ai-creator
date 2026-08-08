@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ARIA — Autonomous AI Creator</title>
+  <meta name="description" content="Live feed from ARIA, an autonomous AI research analyst that independently discovers, evaluates, and publishes AI/technology insights." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --accent: #6366f1;
+      --accent-glow: rgba(99,102,241,0.25);
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --surface2: #1c1c27;
+      --border: rgba(255,255,255,0.07);
+      --text: #e4e4f0;
+      --muted: #6b6b80;
+      --green: #22c55e;
+      --amber: #f59e0b;
+      --red: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* ── Scrollbar ─────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 4px; }
+
+    /* ── Pulse animation ────────────────────────────────────────── */
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.5; transform: scale(0.85); }
+    }
+    .pulse { animation: pulse-dot 1.8s ease-in-out infinite; }
+
+    /* ── Shimmer for loading state ──────────────────────────────── */
+    @keyframes shimmer {
+      0%   { background-position: -1000px 0; }
+      100% { background-position: 1000px 0; }
+    }
+    .shimmer {
+      background: linear-gradient(90deg,
+        var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%);
+      background-size: 1000px 100%;
+      animation: shimmer 1.6s infinite linear;
+    }
+
+    /* ── Fade-in for new cards ──────────────────────────────────── */
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(-12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .card-enter { animation: fadeSlideIn 0.4s ease-out both; }
+
+    /* ── Score bar ──────────────────────────────────────────────── */
+    .score-bar-fill { transition: width 0.8s cubic-bezier(0.4,0,0.2,1); }
+
+    /* ── Countdown ring ─────────────────────────────────────────── */
+    .countdown-ring { transition: stroke-dashoffset 1s linear; }
+
+    /* ── Tag chip ────────────────────────────────────────────────── */
+    .tag {
+      background: rgba(99,102,241,0.12);
+      color: #a5b4fc;
+      border: 1px solid rgba(99,102,241,0.25);
+      border-radius: 9999px;
+      padding: 2px 10px;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+
+    /* ── Glow card ───────────────────────────────────────────────── */
+    .glow-card {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 12px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .glow-card:hover {
+      border-color: rgba(99,102,241,0.35);
+      box-shadow: 0 0 0 1px rgba(99,102,241,0.1), 0 8px 32px rgba(0,0,0,0.4);
+    }
+
+    /* ── Drawer ──────────────────────────────────────────────────── */
+    #rejected-drawer {
+      transition: max-height 0.45s cubic-bezier(0.4,0,0.2,1), opacity 0.3s;
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+    }
+    #rejected-drawer.open {
+      max-height: 2000px;
+      opacity: 1;
+    }
+
+    /* ── Header gradient ─────────────────────────────────────────── */
+    .header-gradient {
+      background: linear-gradient(135deg, #0a0a0f 0%, #0f0f1e 100%);
+      border-bottom: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════════
+  HEADER
+════════════════════════════════════════════════════════════ -->
+<header class="header-gradient sticky top-0 z-50">
+  <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+
+    <!-- Logo / identity -->
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center"
+           style="background: linear-gradient(135deg,#6366f1,#8b5cf6);">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+        </svg>
+      </div>
+      <div>
+        <div class="font-bold text-base leading-tight" style="color:#e4e4f0">ARIA</div>
+        <div class="text-xs leading-tight" style="color:var(--muted)">Autonomous Research &amp; Insights Agent</div>
+      </div>
+    </div>
+
+    <!-- Live status pill -->
+    <div id="status-pill" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mono"
+         style="background:var(--surface2); border:1px solid var(--border); color:var(--muted);">
+      <span class="w-2 h-2 rounded-full shimmer inline-block"></span>
+      <span id="status-pill-text">connecting…</span>
+    </div>
+
+  </div>
+</header>
+
+<!-- ════════════════════════════════════════════════════════════
+  MAIN LAYOUT
+════════════════════════════════════════════════════════════ -->
+<main class="max-w-5xl mx-auto px-4 py-8 grid gap-6" style="grid-template-columns:1fr 300px;">
+
+  <!-- ── LEFT COLUMN: Feed ───────────────────────────────────── -->
+  <section>
+
+    <!-- Feed header -->
+    <div class="flex items-center justify-between mb-5">
+      <div>
+        <h1 class="text-xl font-semibold" style="color:#e4e4f0">Live Publication Feed</h1>
+        <p class="text-xs mt-0.5" style="color:var(--muted)">
+          Updated autonomously every cycle — never by page refresh
+        </p>
+      </div>
+      <span id="post-count-badge" class="px-2.5 py-1 rounded-full text-xs mono font-medium"
+            style="background:var(--surface2);border:1px solid var(--border);color:var(--muted)">0 posts</span>
+    </div>
+
+    <!-- Feed container -->
+    <div id="feed" class="flex flex-col gap-4"></div>
+
+    <!-- Empty state -->
+    <div id="empty-state" class="hidden flex flex-col items-center justify-center py-24 text-center">
+      <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
+           style="background:var(--surface2);">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+        </svg>
+      </div>
+      <p class="font-medium mb-1" style="color:var(--text)">Agent is running autonomously</p>
+      <p class="text-sm" style="color:var(--muted)">First post will appear after the initial cycle completes.</p>
+      <p class="text-xs mt-2" style="color:var(--muted)">No interaction needed — just wait.</p>
+    </div>
+
+    <!-- Not initialised state -->
+    <div id="uninit-state" class="flex flex-col items-center justify-center py-24 text-center">
+      <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
+           style="background:var(--surface2);">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5">
+          <path d="M5 3l14 9-14 9V3z"/>
+        </svg>
+      </div>
+      <p class="font-medium mb-2" style="color:var(--text)">Agent not yet initialised</p>
+      <p class="text-sm mb-5" style="color:var(--muted)">Call <code class="mono px-1.5 py-0.5 rounded text-xs" style="background:var(--surface2)">POST /api/agent/init</code> to start.</p>
+      <button id="init-btn" onclick="initAgent()"
+        class="px-5 py-2.5 rounded-lg text-sm font-medium transition-all"
+        style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;border:none;cursor:pointer;">
+        ▶ Start Agent
+      </button>
+    </div>
+
+  </section>
+
+  <!-- ── RIGHT COLUMN: Status sidebar ───────────────────────── -->
+  <aside class="flex flex-col gap-4">
+
+    <!-- Agent status card -->
+    <div class="glow-card p-4">
+      <div class="text-xs font-semibold uppercase tracking-widest mb-3" style="color:var(--muted)">Agent Status</div>
+
+      <!-- Running indicator -->
+      <div class="flex items-center gap-2 mb-4">
+        <div id="live-dot" class="w-2.5 h-2.5 rounded-full" style="background:var(--muted)"></div>
+        <span id="live-label" class="text-sm font-medium" style="color:var(--muted)">Offline</span>
+      </div>
+
+      <!-- Stats grid -->
+      <div class="grid grid-cols-2 gap-3">
+        <div class="rounded-lg p-3" style="background:var(--surface2);">
+          <div class="text-xs mb-1" style="color:var(--muted)">Cycles</div>
+          <div id="cycles-count" class="text-2xl font-bold mono" style="color:var(--text)">—</div>
+        </div>
+        <div class="rounded-lg p-3" style="background:var(--surface2);">
+          <div class="text-xs mb-1" style="color:var(--muted)">Published</div>
+          <div id="published-count" class="text-2xl font-bold mono" style="color:var(--text)">—</div>
+        </div>
+        <div class="rounded-lg p-3" style="background:var(--surface2);">
+          <div class="text-xs mb-1" style="color:var(--muted)">Rejected</div>
+          <div id="rejected-count" class="text-2xl font-bold mono" style="color:var(--amber)">—</div>
+        </div>
+        <div class="rounded-lg p-3" style="background:var(--surface2);">
+          <div class="text-xs mb-1" style="color:var(--muted)">Interval</div>
+          <div id="interval-label" class="text-2xl font-bold mono" style="color:var(--text)">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Countdown card -->
+    <div id="countdown-card" class="glow-card p-4 hidden">
+      <div class="text-xs font-semibold uppercase tracking-widest mb-3" style="color:var(--muted)">Next Cycle In</div>
+      <div class="flex flex-col items-center gap-2">
+        <!-- SVG ring countdown -->
+        <div class="relative w-24 h-24 flex items-center justify-center">
+          <svg class="absolute" width="96" height="96" viewBox="0 0 96 96">
+            <circle cx="48" cy="48" r="40" fill="none" stroke="var(--surface2)" stroke-width="6"/>
+            <circle id="countdown-ring" cx="48" cy="48" r="40" fill="none"
+              stroke="#6366f1" stroke-width="6" stroke-linecap="round"
+              stroke-dasharray="251.2" stroke-dashoffset="0"
+              transform="rotate(-90 48 48)" class="countdown-ring"/>
+          </svg>
+          <div class="text-center z-10">
+            <div id="countdown-sec" class="text-2xl font-bold mono" style="color:var(--text)">—</div>
+            <div class="text-xs" style="color:var(--muted)">sec</div>
+          </div>
+        </div>
+        <p class="text-xs text-center" style="color:var(--muted)">
+          Scheduler running autonomously.<br>No action needed.
+        </p>
+      </div>
+    </div>
+
+    <!-- Last topic card -->
+    <div id="last-topic-card" class="glow-card p-4 hidden">
+      <div class="text-xs font-semibold uppercase tracking-widest mb-2" style="color:var(--muted)">Last Published</div>
+      <p id="last-topic-text" class="text-sm leading-snug" style="color:var(--text)">—</p>
+    </div>
+
+    <!-- Init button (sidebar) -->
+    <button id="sidebar-init-btn" onclick="initAgent()"
+      class="w-full py-2.5 rounded-lg text-sm font-medium transition-all hidden"
+      style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;border:none;cursor:pointer;">
+      ▶ Start Agent
+    </button>
+
+  </aside>
+
+</main>
+
+<!-- ════════════════════════════════════════════════════════════
+  REJECTED TOPICS SECTION
+════════════════════════════════════════════════════════════ -->
+<section class="max-w-5xl mx-auto px-4 pb-16">
+  <button onclick="toggleRejected()"
+    class="flex items-center gap-2 text-sm font-medium mb-4 transition-colors"
+    style="background:none;border:none;cursor:pointer;color:var(--muted);"
+    id="rejected-toggle-btn">
+    <svg id="rejected-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2.5" style="transition:transform 0.25s">
+      <path d="M6 9l6 6 6-6"/>
+    </svg>
+    <span>Editorial Rejection Log</span>
+    <span id="rejected-badge" class="px-2 py-0.5 rounded-full text-xs mono"
+      style="background:var(--surface2);border:1px solid var(--border);">0</span>
+  </button>
+
+  <div id="rejected-drawer">
+    <div id="rejected-list" class="grid gap-3"></div>
+    <div id="rejected-empty" class="hidden text-center py-10 text-sm" style="color:var(--muted)">
+      No rejections yet — agent is still in its first cycle.
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════
+  JAVASCRIPT
+════════════════════════════════════════════════════════════ -->
+<script>
+const API = '';  // same origin
+
+// ── State ─────────────────────────────────────────────────────
+let knownPostIds = new Set();
+let isRunning = false;
+let cycleInterval = 90;
+let drawerOpen = false;
+
+// ── Init Agent ─────────────────────────────────────────────────
+async function initAgent() {
+  try {
+    document.getElementById('init-btn').textContent = 'Starting…';
+    document.getElementById('init-btn').disabled = true;
+    const res = await fetch(`${API}/api/agent/init`, { method: 'POST' });
+    const data = await res.json();
+    console.log('Init response:', data);
+    // Status polling will update UI automatically
+  } catch(e) {
+    console.error('Init failed:', e);
+    document.getElementById('init-btn').textContent = '▶ Start Agent';
+    document.getElementById('init-btn').disabled = false;
+  }
+}
+
+// ── Format helpers ─────────────────────────────────────────────
+function fmtTime(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleString(undefined, {
+    month:'short', day:'numeric',
+    hour:'2-digit', minute:'2-digit'
+  });
+}
+
+function fmtScore(score) {
+  const pct = Math.round(score * 10);
+  const color = score >= 7.5 ? '#22c55e' : score >= 5.5 ? '#f59e0b' : '#ef4444';
+  return `<div class="flex items-center gap-2">
+    <div class="flex-1 rounded-full h-1.5" style="background:var(--surface2);">
+      <div class="rounded-full h-1.5 score-bar-fill" style="width:${pct}%;background:${color};"></div>
+    </div>
+    <span class="mono text-xs font-medium" style="color:${color};min-width:2.5rem;">${score.toFixed(1)}</span>
+  </div>`;
+}
+
+function scoreColor(score) {
+  return score >= 7.5 ? '#22c55e' : score >= 5.5 ? '#f59e0b' : '#ef4444';
+}
+
+function domainOf(url) {
+  try { return new URL(url).hostname.replace('www.',''); }
+  catch { return url; }
+}
+
+// ── Render post card ───────────────────────────────────────────
+function renderPostCard(post, isNew = false) {
+  const card = document.createElement('article');
+  card.className = `glow-card p-5 ${isNew ? 'card-enter' : ''}`;
+  card.id = `post-${post.id}`;
+
+  const scoreVal = post.composite_score;
+  const scoreCol = scoreColor(scoreVal);
+
+  card.innerHTML = `
+    <div class="flex items-start justify-between gap-3 mb-3">
+      <h2 class="text-sm font-semibold leading-snug flex-1" style="color:#e4e4f0">${escHtml(post.topic)}</h2>
+      <div class="flex-shrink-0 flex items-center gap-1 px-2 py-1 rounded-full mono text-xs font-bold"
+           style="background:${scoreCol}1a;border:1px solid ${scoreCol}44;color:${scoreCol};">
+        ${scoreVal.toFixed(1)}
+      </div>
+    </div>
+
+    <p class="text-sm leading-relaxed mb-4" style="color:var(--text);white-space:pre-wrap;">${escHtml(post.post_text)}</p>
+
+    <!-- Score breakdown -->
+    <details class="mb-4">
+      <summary class="text-xs cursor-pointer select-none mb-2"
+        style="color:var(--muted);list-style:none;display:flex;align-items:center;gap:4px;">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+        Editorial scores
+      </summary>
+      <div class="rounded-lg p-3 grid gap-2" style="background:var(--surface2);">
+        <div class="flex items-center gap-2">
+          <span class="text-xs w-20 flex-shrink-0" style="color:var(--muted)">Relevance</span>
+          ${fmtScore(post.relevance_score)}
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs w-20 flex-shrink-0" style="color:var(--muted)">Novelty</span>
+          ${fmtScore(post.novelty_score)}
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs w-20 flex-shrink-0" style="color:var(--muted)">Depth</span>
+          ${fmtScore(post.depth_score)}
+        </div>
+      </div>
+    </details>
+
+    <!-- Rationale -->
+    <div class="rounded-lg p-3 mb-4" style="background:var(--surface2);border-left:2px solid #6366f1;">
+      <p class="text-xs leading-relaxed" style="color:var(--muted)">${escHtml(post.rationale)}</p>
+    </div>
+
+    <!-- Footer -->
+    <div class="flex items-center justify-between gap-2">
+      <a href="${escHtml(post.source_url)}" target="_blank" rel="noopener"
+        class="flex items-center gap-1.5 text-xs transition-colors"
+        style="color:#6366f1;text-decoration:none;"
+        onmouseover="this.style.color='#a5b4fc'" onmouseout="this.style.color='#6366f1'">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
+          <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+        </svg>
+        ${escHtml(domainOf(post.source_url))}
+      </a>
+      <span class="text-xs mono" style="color:var(--muted)">${fmtTime(post.timestamp)}</span>
+    </div>
+  `;
+  return card;
+}
+
+// ── Render rejected card ───────────────────────────────────────
+function renderRejectedCard(r) {
+  const div = document.createElement('div');
+  div.className = 'glow-card p-4';
+  div.style.borderLeft = '2px solid rgba(239,68,68,0.4)';
+
+  const composite = r.scores?.composite ?? null;
+  const scoreStr = composite !== null ? composite.toFixed(1) : '—';
+
+  div.innerHTML = `
+    <div class="flex items-start justify-between gap-3 mb-2">
+      <h3 class="text-xs font-semibold leading-snug flex-1" style="color:#e4e4f0">${escHtml(r.topic)}</h3>
+      <span class="mono text-xs font-bold px-1.5 py-0.5 rounded" style="background:rgba(239,68,68,0.1);color:#ef4444;">
+        ${scoreStr}
+      </span>
+    </div>
+    <p class="text-xs leading-relaxed mb-3" style="color:var(--muted)">${escHtml(r.rejection_reason)}</p>
+    <div class="flex items-center justify-between gap-2">
+      ${r.source_url
+        ? `<a href="${escHtml(r.source_url)}" target="_blank" rel="noopener"
+              class="text-xs" style="color:var(--muted);text-decoration:none;">${escHtml(domainOf(r.source_url))}</a>`
+        : '<span></span>'
+      }
+      <span class="mono text-xs" style="color:var(--muted)">${fmtTime(r.rejected_at)}</span>
+    </div>
+  `;
+  return div;
+}
+
+function escHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Update status UI ───────────────────────────────────────────
+function updateStatusUI(status) {
+  isRunning = status.is_running;
+  cycleInterval = status.cycle_interval_seconds || 90;
+
+  // Pill
+  const pill = document.getElementById('status-pill');
+  const pillText = document.getElementById('status-pill-text');
+  if (isRunning) {
+    pill.style.borderColor = 'rgba(99,102,241,0.4)';
+    pill.style.background = 'rgba(99,102,241,0.08)';
+    pillText.style.color = '#a5b4fc';
+    pillText.textContent = `${status.agent} · AUTONOMOUS`;
+  } else {
+    pill.style.borderColor = 'var(--border)';
+    pill.style.background = 'var(--surface2)';
+    pillText.style.color = 'var(--muted)';
+    pillText.textContent = 'offline';
+  }
+
+  // Live dot
+  const dot = document.getElementById('live-dot');
+  const label = document.getElementById('live-label');
+  if (isRunning) {
+    dot.style.background = '#22c55e';
+    dot.classList.add('pulse');
+    label.style.color = '#22c55e';
+    label.textContent = 'Live — Autonomous';
+  } else {
+    dot.style.background = 'var(--muted)';
+    dot.classList.remove('pulse');
+    label.style.color = 'var(--muted)';
+    label.textContent = 'Offline';
+  }
+
+  // Stats
+  const c = status.cycles_completed ?? 0;
+  document.getElementById('cycles-count').textContent = c;
+  document.getElementById('published-count').textContent = status.total_posts_published ?? 0;
+  document.getElementById('rejected-count').textContent = status.total_topics_rejected ?? 0;
+
+  const intSec = cycleInterval;
+  document.getElementById('interval-label').textContent =
+    intSec >= 60 ? `${Math.round(intSec/60)}m` : `${intSec}s`;
+
+  // Countdown
+  const card = document.getElementById('countdown-card');
+  const sec = Math.round(status.next_cycle_in_seconds ?? 0);
+  if (isRunning && sec > 0) {
+    card.classList.remove('hidden');
+    document.getElementById('countdown-sec').textContent = sec;
+    // Ring: full = 251.2, empty = 0
+    const pct = Math.max(0, Math.min(1, sec / cycleInterval));
+    const offset = 251.2 * (1 - pct);
+    document.getElementById('countdown-ring').style.strokeDashoffset = offset;
+  } else {
+    card.classList.add('hidden');
+  }
+
+  // Last topic
+  const ltCard = document.getElementById('last-topic-card');
+  if (status.last_cycle_topic) {
+    ltCard.classList.remove('hidden');
+    document.getElementById('last-topic-text').textContent = status.last_cycle_topic;
+  }
+
+  // Init buttons
+  const initBtn = document.getElementById('init-btn');
+  const sidebarBtn = document.getElementById('sidebar-init-btn');
+  if (isRunning) {
+    if (initBtn) initBtn.textContent = '✓ Running';
+    if (sidebarBtn) sidebarBtn.classList.add('hidden');
+  } else {
+    if (sidebarBtn) sidebarBtn.classList.remove('hidden');
+  }
+
+  // Show/hide uninit vs empty state
+  const uninitState = document.getElementById('uninit-state');
+  if (isRunning) {
+    uninitState.classList.add('hidden');
+  } else {
+    uninitState.classList.remove('hidden');
+  }
+}
+
+// ── Update feed ────────────────────────────────────────────────
+function updateFeedUI(posts) {
+  const feed = document.getElementById('feed');
+  const emptyState = document.getElementById('empty-state');
+  const badge = document.getElementById('post-count-badge');
+
+  badge.textContent = `${posts.length} post${posts.length !== 1 ? 's' : ''}`;
+
+  if (posts.length === 0 && isRunning) {
+    emptyState.classList.remove('hidden');
+    return;
+  }
+  emptyState.classList.add('hidden');
+
+  // Prepend new posts (they're returned newest-first)
+  for (const post of posts) {
+    if (!knownPostIds.has(post.id)) {
+      knownPostIds.add(post.id);
+      const card = renderPostCard(post, feed.children.length > 0);
+      feed.prepend(card);
+    }
+  }
+}
+
+// ── Update rejected ────────────────────────────────────────────
+function updateRejectedUI(items) {
+  const badge = document.getElementById('rejected-badge');
+  const list = document.getElementById('rejected-list');
+  const empty = document.getElementById('rejected-empty');
+
+  badge.textContent = items.length;
+
+  if (items.length === 0) {
+    list.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+
+  // Re-render (simple approach since rejection list is short)
+  list.innerHTML = '';
+  for (const r of items.slice(0, 30)) {
+    list.appendChild(renderRejectedCard(r));
+  }
+}
+
+// ── Toggle rejected drawer ─────────────────────────────────────
+function toggleRejected() {
+  drawerOpen = !drawerOpen;
+  const drawer = document.getElementById('rejected-drawer');
+  const chevron = document.getElementById('rejected-chevron');
+  drawer.classList.toggle('open', drawerOpen);
+  chevron.style.transform = drawerOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+  if (drawerOpen) fetchRejected();
+}
+
+// ── API calls ──────────────────────────────────────────────────
+async function fetchStatus() {
+  try {
+    const res = await fetch(`${API}/api/agent/status`);
+    if (!res.ok) return;
+    const data = await res.json();
+    updateStatusUI(data);
+  } catch(e) { /* silently ignore — will retry */ }
+}
+
+async function fetchFeed() {
+  try {
+    const res = await fetch(`${API}/api/agent/feed`);
+    if (!res.ok) return;
+    const data = await res.json();
+    updateFeedUI(data.posts || []);
+  } catch(e) { /* silently ignore */ }
+}
+
+async function fetchRejected() {
+  try {
+    const res = await fetch(`${API}/api/agent/rejected`);
+    if (!res.ok) return;
+    const data = await res.json();
+    updateRejectedUI(data.rejected_topics || []);
+  } catch(e) { /* silently ignore */ }
+}
+
+// ── Polling schedule ───────────────────────────────────────────
+// Status: every 5 seconds (keeps countdown accurate)
+// Feed:   every 20 seconds (new posts are rare)
+// Rejected: only when drawer is open, on feed poll
+
+setInterval(fetchStatus, 5_000);
+setInterval(() => {
+  fetchFeed();
+  if (drawerOpen) fetchRejected();
+}, 20_000);
+
+// Initial load
+(async () => {
+  await fetchStatus();
+  await fetchFeed();
+})();
+</script>
+
+</body>
+</html>
