@@ -30,9 +30,9 @@ class Settings(BaseSettings):
     # ── Scheduler ─────────────────────────────────────────────────
     # Demo default: 90 s.  Production: 7200 s (2 h) or 10800 s (3 h).
     cycle_interval_seconds: int = Field(
-        default=90,
+        default=300,
         ge=30,
-        description="Seconds between autonomous pipeline cycles.",
+        description="Seconds between autonomous pipeline cycles (300=5min recommended for free tier).",
     )
 
     # ── Editorial bar ─────────────────────────────────────────────
@@ -61,8 +61,8 @@ class Settings(BaseSettings):
     # ── Model ─────────────────────────────────────────────────────
     # llama-3.3-70b-versatile is Groq's best general-purpose model.
     groq_model: str = Field(
-        default="llama-3.3-70b-versatile",
-        description="Groq model to use for editorial scoring and content generation.",
+        default="llama-3.1-8b-instant",
+        description="Groq model to use. llama-3.1-8b-instant has 500K TPD free tier.",
     )
 
     # ── Derived ───────────────────────────────────────────────────
