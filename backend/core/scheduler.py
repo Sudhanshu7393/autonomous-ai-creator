@@ -23,7 +23,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from backend.config import get_settings
 from backend.core.memory_manager import MemoryManager
