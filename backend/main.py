@@ -50,7 +50,11 @@ def configure_logging(level: str = "INFO") -> None:
 
     # UTF-8 stream handler
     handler = logging.StreamHandler(sys.stdout)
-    handler.stream.reconfigure(encoding="utf-8", errors="replace")
+    try:
+        if hasattr(handler.stream, "reconfigure"):
+            handler.stream.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
     formatter = logging.Formatter(
         fmt="%(asctime)s | %(levelname)-8s | %(name)-40s | %(message)s",

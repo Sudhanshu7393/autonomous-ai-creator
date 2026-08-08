@@ -22,10 +22,10 @@ class Settings(BaseSettings):
     )
 
     # ── Groq ──────────────────────────────────────────────────────
-    groq_api_key: str = Field(..., description="Groq API key (required)")
+    groq_api_key: str = Field(default="", description="Groq API key")
 
     # ── Tavily ────────────────────────────────────────────────────
-    tavily_api_key: str = Field(..., description="Tavily API key for web search (required)")
+    tavily_api_key: str = Field(default="", description="Tavily API key for web search")
 
     # ── Scheduler ─────────────────────────────────────────────────
     # Demo default: 90 s.  Production: 7200 s (2 h) or 10800 s (3 h).
