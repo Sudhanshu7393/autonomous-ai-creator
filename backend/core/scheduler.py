@@ -50,10 +50,21 @@ class SchedulerState:
     agent_name: str = "ARIA"
 
     def seconds_until_next(self) -> float:
-        if self.next_cycle_at is None:
-            return 0.0
-        delta = (self.next_cycle_at - datetime.now(timezone.utc)).total_seconds()
-        return max(0.0, delta)
+        from backend.config import get_settings
+        settings = get_settings()
+        interval = float(settings.cycle_interval_seconds)
+
+        if self.next_cycle_at is not None:
+            delta = (self.next_cycle_at - datetime.now(timezone.utc)).total_seconds()
+            if delta > 0:
+                return delta
+
+        if self.last_cycle_at is not None:
+            delta = (self.last_cycle_at + timedelta(seconds=interval) - datetime.now(timezone.utc)).total_seconds()
+            if delta > 0:
+                return delta
+
+        return interval
 
 
 # Singleton state object shared with the API layer
@@ -207,7 +218,6 @@ class Scheduler:
                 exc_info=True,
             )
             # Attempt to mark cycle as failed in DB (best-effort)
-            try:
-                await self._memory.fail_cycle("unknown", str(exc))
-            except Exception:  # pylint: disable=broad-except
-                pass
+        finally:
+            settings = get_settings()
+            _state.next_cycle_at = datetime.now(timezone.utc) + timedelta(seconds=settings.cycle_interval_seconds)
