@@ -189,15 +189,16 @@ class TopicDiscoveryService:
         """Use Groq to filter and structure Tavily results into typed topics."""
         persona = self._persona
 
-        # Format results for the prompt (top 25 by Tavily score)
+        # Format results for the prompt (top 8 relevant search results)
         formatted = []
-        for i, r in enumerate(raw_results[:25], 1):
+        for i, r in enumerate(raw_results[:8], 1):
+            snippet = r.get("content", "")[:250].strip()
             formatted.append(
                 f"[{i}]\n"
                 f"TITLE: {r['title']}\n"
                 f"URL: {r['url']}\n"
                 f"DATE: {r.get('published_date', 'recent')}\n"
-                f"CONTENT: {r['content'][:400]}"
+                f"CONTENT: {snippet}"
             )
         search_text = "\n\n---\n\n".join(formatted)
 
