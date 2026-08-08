@@ -118,10 +118,14 @@ class Scheduler:
         return True
 
     def stop(self) -> None:
-        """Signal the loop to stop after the current cycle."""
+        """Signal the background loop to stop gracefully."""
         self._stop_event.set()
-        _state.is_running = False
         logger.info("Scheduler stop requested")
+
+    async def trigger_immediate_cycle(self) -> None:
+        """Trigger a single cycle execution immediately."""
+        logger.info("Manual immediate cycle triggered")
+        await self._run_one_cycle()
 
     async def _loop(self) -> None:
         """

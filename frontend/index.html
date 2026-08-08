@@ -134,11 +134,22 @@
       </div>
     </div>
 
-    <!-- Live status pill -->
-    <div id="status-pill" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mono"
-         style="background:var(--surface2); border:1px solid var(--border); color:var(--muted);">
-      <span class="w-2 h-2 rounded-full shimmer inline-block"></span>
-      <span id="status-pill-text">connecting…</span>
+    <!-- Live status pill & Action buttons -->
+    <div class="flex items-center gap-3">
+      <button id="trigger-btn" onclick="triggerCycle()"
+              class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+              style="background: linear-gradient(135deg,#6366f1,#8b5cf6); color: white; border: none; box-shadow: 0 2px 10px rgba(99,102,241,0.3);">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+        </svg>
+        <span>Run Cycle Now</span>
+      </button>
+
+      <div id="status-pill" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mono"
+           style="background:var(--surface2); border:1px solid var(--border); color:var(--muted);">
+        <span class="w-2 h-2 rounded-full shimmer inline-block"></span>
+        <span id="status-pill-text">connecting…</span>
+      </div>
     </div>
 
   </div>
@@ -160,8 +171,12 @@
           Updated autonomously every cycle — never by page refresh
         </p>
       </div>
-      <span id="post-count-badge" class="px-2.5 py-1 rounded-full text-xs mono font-medium"
-            style="background:var(--surface2);border:1px solid var(--border);color:var(--muted)">0 posts</span>
+      <div class="flex items-center gap-2">
+        <button onclick="exportJSON('feed')" class="px-2.5 py-1 rounded-full text-xs mono font-medium cursor-pointer transition-all hover:border-indigo-500"
+                style="background:var(--surface2);border:1px solid var(--border);color:var(--muted)">📥 Export JSON</button>
+        <span id="post-count-badge" class="px-2.5 py-1 rounded-full text-xs mono font-medium"
+              style="background:var(--surface2);border:1px solid var(--border);color:var(--muted)">0 posts</span>
+      </div>
     </div>
 
     <!-- Feed container -->
@@ -629,7 +644,49 @@ async function fetchRejected() {
   } catch(e) { /* silently ignore */ }
 }
 
+async function triggerCycle() {
+  const btn = document.getElementById('trigger-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+    btn.innerText = '⚡ Running Cycle...';
+  }
+  try {
+    await fetch(`${API}/api/agent/trigger`, { method: 'POST' });
+    setTimeout(async () => {
+      await fetchStatus();
+      await fetchFeed();
+      if (drawerOpen) await fetchRejected();
+      if (btn) {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg><span>Run Cycle Now</span>';
+      }
+    }, 4000);
+  } catch(e) {
+    if (btn) {
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.innerHTML = '<span>Run Cycle Now</span>';
+    }
+  }
+}
+
+async function exportJSON(type) {
+  const url = type === 'feed' ? `${API}/api/agent/feed` : `${API}/api/agent/rejected`;
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `aria-agent-${type}-${Date.now()}.json`;
+    a.click();
+  } catch(e) { console.error('Export failed', e); }
+}
+
 // ── Polling schedule ───────────────────────────────────────────
+
 // Status: every 5 seconds (keeps countdown accurate)
 // Feed:   every 20 seconds (new posts are rare)
 // Rejected: only when drawer is open, on feed poll

@@ -94,6 +94,34 @@ async def init_agent(
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# POST /api/agent/trigger
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@router.post(
+    "/trigger",
+    response_model=dict[str, Any],
+    status_code=status.HTTP_200_OK,
+    summary="Trigger an immediate cycle execution",
+    description="Fires a single autonomous pipeline cycle immediately in the background.",
+)
+async def trigger_cycle(
+    scheduler=Depends(get_scheduler),
+) -> dict[str, Any]:
+    state = get_state()
+    if not state.is_running:
+        scheduler.start()
+
+    asyncio.create_task(scheduler.trigger_immediate_cycle())
+    logger.info("Manual cycle trigger received via API")
+    return {
+        "status": "triggered",
+        "message": "Immediate cycle execution triggered. Fresh news discovery and evaluation in progress.",
+    }
+
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # GET /api/agent/feed
 # ─────────────────────────────────────────────────────────────────────────────
 
