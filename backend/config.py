@@ -37,7 +37,7 @@ class Settings(BaseSettings):
 
     # ── Editorial bar ─────────────────────────────────────────────
     min_relevance_score: float = Field(
-        default=6.5,
+        default=6.0,
         ge=0.0,
         le=10.0,
         description="Minimum composite editorial score (0–10) to publish.",
