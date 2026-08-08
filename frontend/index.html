@@ -118,26 +118,35 @@
   HEADER
 ════════════════════════════════════════════════════════════ -->
 <header class="header-gradient sticky top-0 z-50">
-  <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 py-3.5 sm:py-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
 
     <!-- Logo / identity -->
-    <div class="flex items-center gap-3">
-      <div class="w-8 h-8 rounded-lg flex items-center justify-center"
-           style="background: linear-gradient(135deg,#6366f1,#8b5cf6);">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
-          <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
-        </svg>
+    <div class="flex items-center justify-between sm:justify-start gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+             style="background: linear-gradient(135deg,#6366f1,#8b5cf6);">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <div>
+          <div class="font-bold text-base leading-tight" style="color:#e4e4f0">ARIA</div>
+          <div class="text-xs leading-tight" style="color:var(--muted)">Autonomous Research &amp; Insights Agent</div>
+        </div>
       </div>
-      <div>
-        <div class="font-bold text-base leading-tight" style="color:#e4e4f0">ARIA</div>
-        <div class="text-xs leading-tight" style="color:var(--muted)">Autonomous Research &amp; Insights Agent</div>
+
+      <!-- Live status pill (visible on mobile inline) -->
+      <div id="status-pill-mobile" class="sm:hidden flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium mono"
+           style="background:var(--surface2); border:1px solid var(--border); color:var(--muted);">
+        <span class="w-2 h-2 rounded-full shimmer inline-block"></span>
+        <span id="status-pill-text-mobile">connecting…</span>
       </div>
     </div>
 
     <!-- Live status pill & Action buttons -->
-    <div class="flex items-center gap-3">
+    <div class="flex items-center justify-between sm:justify-end gap-2.5 sm:gap-3">
       <button id="trigger-btn" onclick="triggerCycle()"
-              class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+              class="flex-1 sm:flex-initial px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
               style="background: linear-gradient(135deg,#6366f1,#8b5cf6); color: white; border: none; box-shadow: 0 2px 10px rgba(99,102,241,0.3);">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
@@ -145,7 +154,7 @@
         <span>Run Cycle Now</span>
       </button>
 
-      <div id="status-pill" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mono"
+      <div id="status-pill" class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mono"
            style="background:var(--surface2); border:1px solid var(--border); color:var(--muted);">
         <span class="w-2 h-2 rounded-full shimmer inline-block"></span>
         <span id="status-pill-text">connecting…</span>
@@ -158,20 +167,20 @@
 <!-- ════════════════════════════════════════════════════════════
   MAIN LAYOUT
 ════════════════════════════════════════════════════════════ -->
-<main class="max-w-5xl mx-auto px-4 py-8 grid gap-6" style="grid-template-columns:1fr 300px;">
+<main class="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 sm:gap-8">
 
   <!-- ── LEFT COLUMN: Feed ───────────────────────────────────── -->
-  <section>
+  <section class="min-w-0">
 
     <!-- Feed header -->
-    <div class="flex items-center justify-between mb-5">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
       <div>
         <h1 class="text-xl font-semibold" style="color:#e4e4f0">Live Publication Feed</h1>
         <p class="text-xs mt-0.5" style="color:var(--muted)">
           Updated autonomously every cycle — never by page refresh
         </p>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 self-start sm:self-auto">
         <button onclick="exportJSON('feed')" class="px-2.5 py-1 rounded-full text-xs mono font-medium cursor-pointer transition-all hover:border-indigo-500"
                 style="background:var(--surface2);border:1px solid var(--border);color:var(--muted)">📥 Export JSON</button>
         <span id="post-count-badge" class="px-2.5 py-1 rounded-full text-xs mono font-medium"
@@ -183,7 +192,7 @@
     <div id="feed" class="flex flex-col gap-4"></div>
 
     <!-- Empty state -->
-    <div id="empty-state" class="hidden flex flex-col items-center justify-center py-24 text-center">
+    <div id="empty-state" class="hidden flex flex-col items-center justify-center py-16 sm:py-24 text-center px-4">
       <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
            style="background:var(--surface2);">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5">
@@ -196,7 +205,7 @@
     </div>
 
     <!-- Not initialised state -->
-    <div id="uninit-state" class="flex flex-col items-center justify-center py-24 text-center">
+    <div id="uninit-state" class="flex flex-col items-center justify-center py-16 sm:py-24 text-center px-4">
       <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
            style="background:var(--surface2);">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5">
@@ -215,7 +224,7 @@
   </section>
 
   <!-- ── RIGHT COLUMN: Status sidebar ───────────────────────── -->
-  <aside class="flex flex-col gap-4">
+  <aside class="flex flex-col gap-4 min-w-0">
 
     <!-- Agent status card -->
     <div class="glow-card p-4">
@@ -423,18 +432,18 @@ function renderPostCard(post, isNew = false) {
     </div>
 
     <!-- Footer -->
-    <div class="flex items-center justify-between gap-2">
+    <div class="flex items-center justify-between gap-2 overflow-hidden">
       <a href="${escHtml(post.source_url)}" target="_blank" rel="noopener"
-        class="flex items-center gap-1.5 text-xs transition-colors"
+        class="flex items-center gap-1.5 text-xs transition-colors truncate max-w-[200px] sm:max-w-xs"
         style="color:#6366f1;text-decoration:none;"
         onmouseover="this.style.color='#a5b4fc'" onmouseout="this.style.color='#6366f1'">
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="shrink-0">
           <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
           <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
         </svg>
-        ${escHtml(domainOf(post.source_url))}
+        <span class="truncate">${escHtml(domainOf(post.source_url))}</span>
       </a>
-      <span class="text-xs mono" style="color:var(--muted)">${fmtTime(post.timestamp)}</span>
+      <span class="text-xs mono shrink-0" style="color:var(--muted)">${fmtTime(post.timestamp)}</span>
     </div>
   `;
   return card;
@@ -443,7 +452,7 @@ function renderPostCard(post, isNew = false) {
 // ── Render rejected card ───────────────────────────────────────
 function renderRejectedCard(r) {
   const div = document.createElement('div');
-  div.className = 'glow-card p-4';
+  div.className = 'glow-card p-4 break-words';
   div.style.borderLeft = '2px solid rgba(239,68,68,0.4)';
 
   const composite = r.scores?.composite ?? null;
@@ -483,16 +492,19 @@ function updateStatusUI(status) {
   // Pill
   const pill = document.getElementById('status-pill');
   const pillText = document.getElementById('status-pill-text');
+  const pillMob = document.getElementById('status-pill-mobile');
+  const pillMobText = document.getElementById('status-pill-text-mobile');
+
   if (isRunning) {
-    pill.style.borderColor = 'rgba(99,102,241,0.4)';
-    pill.style.background = 'rgba(99,102,241,0.08)';
-    pillText.style.color = '#a5b4fc';
-    pillText.textContent = `${status.agent} · AUTONOMOUS`;
+    if (pill) { pill.style.borderColor = 'rgba(99,102,241,0.4)'; pill.style.background = 'rgba(99,102,241,0.08)'; }
+    if (pillText) { pillText.style.color = '#a5b4fc'; pillText.textContent = `${status.agent} · AUTONOMOUS`; }
+    if (pillMob) { pillMob.style.borderColor = 'rgba(99,102,241,0.4)'; pillMob.style.background = 'rgba(99,102,241,0.08)'; }
+    if (pillMobText) { pillMobText.style.color = '#a5b4fc'; pillMobText.textContent = `LIVE`; }
   } else {
-    pill.style.borderColor = 'var(--border)';
-    pill.style.background = 'var(--surface2)';
-    pillText.style.color = 'var(--muted)';
-    pillText.textContent = 'offline';
+    if (pill) { pill.style.borderColor = 'var(--border)'; pill.style.background = 'var(--surface2)'; }
+    if (pillText) { pillText.style.color = 'var(--muted)'; pillText.textContent = 'offline'; }
+    if (pillMob) { pillMob.style.borderColor = 'var(--border)'; pillMob.style.background = 'var(--surface2)'; }
+    if (pillMobText) { pillMobText.style.color = 'var(--muted)'; pillMobText.textContent = 'OFFLINE'; }
   }
 
   // Live dot
