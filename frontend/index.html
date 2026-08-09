@@ -567,7 +567,8 @@ function updateStatusUI(status) {
 
   // Countdown
   const serverSec = Math.round(status.next_cycle_in_seconds ?? 0);
-  if (serverSec > 0 || clientNextSec <= 0) {
+  // Sync only if uninitialized, finished, or significant drift (> 12s) occurs
+  if (clientNextSec <= 0 || Math.abs(clientNextSec - serverSec) > 12) {
     clientNextSec = serverSec;
   }
   renderCountdownRing(clientNextSec);

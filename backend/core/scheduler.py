@@ -137,6 +137,7 @@ class Scheduler:
         """Trigger a single cycle execution immediately."""
         logger.info("Manual immediate cycle triggered")
         await self._run_one_cycle()
+        _state.next_cycle_at = datetime.now(timezone.utc) + timedelta(seconds=self._settings.cycle_interval_seconds)
 
     async def _loop(self) -> None:
         """
@@ -187,7 +188,6 @@ class Scheduler:
         Run one pipeline cycle, catching ALL exceptions.
         A single failed cycle NEVER stops the loop.
         """
-        _state.next_cycle_at = None
         logger.info(
             "Cycle starting",
             extra={"cycle_number": _state.cycles_completed + 1},
@@ -217,7 +217,3 @@ class Scheduler:
                 },
                 exc_info=True,
             )
-            # Attempt to mark cycle as failed in DB (best-effort)
-        finally:
-            settings = get_settings()
-            _state.next_cycle_at = datetime.now(timezone.utc) + timedelta(seconds=settings.cycle_interval_seconds)
