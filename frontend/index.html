@@ -332,7 +332,40 @@ const API = '';  // same origin
 // ── State ─────────────────────────────────────────────────────
 let knownPostIds = new Set();
 let isRunning = false;
-let cycleInterval = 90;
+let cycleInterval = 300;
+let clientNextSec = 0;
+let countdownInterval = null;
+
+function renderCountdownRing(sec) {
+  const card = document.getElementById('countdown-card');
+  if (isRunning && sec > 0) {
+    card.classList.remove('hidden');
+    document.getElementById('countdown-sec').textContent = sec;
+    const pct = Math.max(0, Math.min(1, sec / cycleInterval));
+    const offset = 251.2 * (1 - pct);
+    document.getElementById('countdown-ring').style.strokeDashoffset = offset;
+  } else if (isRunning && sec <= 0) {
+    card.classList.remove('hidden');
+    document.getElementById('countdown-sec').textContent = '0';
+    document.getElementById('countdown-ring').style.strokeDashoffset = 251.2;
+  } else {
+    card.classList.add('hidden');
+  }
+}
+
+function startClientTicker() {
+  if (countdownInterval) clearInterval(countdownInterval);
+  countdownInterval = setInterval(() => {
+    if (isRunning && clientNextSec > 0) {
+      clientNextSec--;
+      renderCountdownRing(clientNextSec);
+      if (clientNextSec === 0) {
+        fetchStatus();
+        fetchFeed();
+      }
+    }
+  }, 1000);
+}
 let drawerOpen = false;
 
 // ── Init Agent ─────────────────────────────────────────────────
@@ -533,18 +566,11 @@ function updateStatusUI(status) {
     intSec >= 60 ? `${Math.round(intSec/60)}m` : `${intSec}s`;
 
   // Countdown
-  const card = document.getElementById('countdown-card');
-  const sec = Math.round(status.next_cycle_in_seconds ?? 0);
-  if (isRunning && sec > 0) {
-    card.classList.remove('hidden');
-    document.getElementById('countdown-sec').textContent = sec;
-    // Ring: full = 251.2, empty = 0
-    const pct = Math.max(0, Math.min(1, sec / cycleInterval));
-    const offset = 251.2 * (1 - pct);
-    document.getElementById('countdown-ring').style.strokeDashoffset = offset;
-  } else {
-    card.classList.add('hidden');
+  const serverSec = Math.round(status.next_cycle_in_seconds ?? 0);
+  if (serverSec > 0 || clientNextSec <= 0) {
+    clientNextSec = serverSec;
   }
+  renderCountdownRing(clientNextSec);
 
   // Last topic
   const ltCard = document.getElementById('last-topic-card');
@@ -711,6 +737,7 @@ setInterval(() => {
 
 // Initial load
 (async () => {
+  startClientTicker();
   await fetchStatus();
   await fetchFeed();
 })();

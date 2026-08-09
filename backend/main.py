@@ -101,8 +101,9 @@ async def lifespan(app: FastAPI):
     persona_manager.load()
     app.state.persona_manager = persona_manager
 
-    # ── Scheduler (not started yet — waits for /init) ─────────────────────
+    # ── Scheduler (auto-started on boot) ──────────────────────────────────
     scheduler = Scheduler(memory, persona_manager)
+    scheduler.start()
     app.state.scheduler = scheduler
 
     persona = persona_manager.persona
