@@ -4,6 +4,16 @@
 
 ---
 
+## 👥 Team & Contributors
+
+| Name / GitHub | Role | Profile Link |
+|---------------|------|--------------|
+| **Sudhanshu** | Lead Architect & Full-Stack Developer | [@Sudhanshu7393](https://github.com/Sudhanshu7393) |
+| **Tanishq** | Contributor & AI Pipeline Developer | [@Tanishq-7777](https://github.com/Tanishq-7777) |
+| **Suryansh Kumar** | Contributor & Infrastructure Engineer | [@SuryanshKumar001](https://github.com/SuryanshKumar001) |
+
+---
+
 ## Table of Contents
 
 1. [Architecture Overview](#architecture-overview)
