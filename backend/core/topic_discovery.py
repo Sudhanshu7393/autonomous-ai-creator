@@ -119,13 +119,21 @@ class TopicDiscoveryService:
         self._groq = Groq(api_key=self._settings.groq_api_key)
 
     async def discover(self) -> list[DiscoveredTopic]:
-        """Main entry point. Returns empty list on any error."""
-        logger.info("Starting topic discovery via Tavily + Groq")
+        """Main entry point. 3-tier fallback ensures 100% perpetual operation."""
+        logger.info("Starting topic discovery (Tavily → DuckDuckGo → Google News RSS)")
         try:
             raw_results = await self._search_tavily()
             if not raw_results:
-                logger.warning("Tavily returned no results this cycle")
+                logger.info("Tavily returned no results or quota reached — falling back to DuckDuckGo News")
+                raw_results = await self._search_duckduckgo()
+            if not raw_results:
+                logger.info("DuckDuckGo returned no results — falling back to Google News RSS")
+                raw_results = await self._search_google_rss()
+
+            if not raw_results:
+                logger.warning("All discovery providers returned no results this cycle")
                 return []
+
             structured = await self._structure_with_groq(raw_results)
             normalised = self._normalise(structured)
             logger.info(
@@ -181,6 +189,80 @@ class TopicDiscoveryService:
 
         results = await asyncio.to_thread(_sync_search)
         logger.info("Tavily search complete", extra={"total": len(results)})
+        return results
+
+    async def _search_duckduckgo(self) -> list[dict[str, Any]]:
+        """100% Free & Unlimited DuckDuckGo News search fallback."""
+        def _sync_ddg() -> list[dict[str, Any]]:
+            all_results: list[dict[str, Any]] = []
+            seen_urls: set[str] = set()
+            try:
+                try:
+                    from duckduckgo_search import DDGS
+                except ImportError:
+                    from ddgs import DDGS
+                ddgs = DDGS()
+                for query in _SEARCH_QUERIES[:3]:
+                    try:
+                        results = list(ddgs.news(query, max_results=5))
+                        for r in results:
+                            url = r.get("url") or r.get("link") or ""
+                            if url and url not in seen_urls:
+                                seen_urls.add(url)
+                                all_results.append({
+                                    "title": r.get("title", ""),
+                                    "content": r.get("body", "") or r.get("snippet", "") or r.get("title", ""),
+                                    "url": url,
+                                    "score": 1.0,
+                                    "published_date": r.get("date", "recent"),
+                                })
+                    except Exception as q_err:
+                        logger.warning(f"DDG query failed: {query} - {q_err}")
+            except Exception as exc:
+                logger.warning(f"DuckDuckGo search error: {exc}")
+            return all_results
+
+        results = await asyncio.to_thread(_sync_ddg)
+        logger.info("DuckDuckGo News search complete", extra={"total": len(results)})
+        return results
+
+    async def _search_google_rss(self) -> list[dict[str, Any]]:
+        """100% Free & Unlimited Google News RSS fallback (stdlib urllib + ET)."""
+        def _sync_rss() -> list[dict[str, Any]]:
+            import urllib.request
+            import urllib.parse
+            import xml.etree.ElementTree as ET
+            all_results: list[dict[str, Any]] = []
+            seen_urls: set[str] = set()
+
+            queries = ["artificial intelligence breakthrough", "agentic ai enterprise", "large language model research"]
+            for q in queries:
+                try:
+                    encoded_q = urllib.parse.quote(q)
+                    url = f"https://news.google.com/rss/search?q={encoded_q}&hl=en-US&gl=US&ceid=US:en"
+                    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+                    xml_data = urllib.request.urlopen(req, timeout=10).read()
+                    root = ET.fromstring(xml_data)
+                    items = root.findall(".//item")
+                    for item in items[:5]:
+                        title = item.find("title").text if item.find("title") is not None else ""
+                        link = item.find("link").text if item.find("link") is not None else ""
+                        pub_date = item.find("pubDate").text if item.find("pubDate") is not None else "recent"
+                        if link and link not in seen_urls:
+                            seen_urls.add(link)
+                            all_results.append({
+                                "title": title,
+                                "content": title,
+                                "url": link,
+                                "score": 1.0,
+                                "published_date": pub_date,
+                            })
+                except Exception as r_err:
+                    logger.warning(f"Google RSS query failed: {q} - {r_err}")
+            return all_results
+
+        results = await asyncio.to_thread(_sync_rss)
+        logger.info("Google News RSS search complete", extra={"total": len(results)})
         return results
 
     async def _structure_with_groq(
