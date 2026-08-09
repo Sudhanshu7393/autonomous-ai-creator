@@ -1,20 +1,19 @@
-# PROMPTS.md — AI Usage Log
+# PROMPTS.md — AI Usage Log & Pair-Programming Journal
 
-This project was built using **Google Antigravity (Gemini)** as an AI coding assistant.
-The entire backend, frontend, and deployment configuration was vibe-coded in a single session.
-
----
-
-## Build Session Summary
-
-**Project:** Autonomous AI Creator  
-**AI Tool:** Google Antigravity (Gemini 2.5 Pro)  
-**Build Time:** ~1 day (hackathon sprint)  
-**Approach:** Fully agentic pair programming — the AI wrote all code, fixed bugs, and deployed
+This project was built using **Google Antigravity (Gemini)** as an AI pair programming assistant.
+The entire backend, frontend, responsive layout, and deployment configuration was vibe-coded and iteratively refined.
 
 ---
 
-## Key Prompts Used
+## 👥 Team & Contributors
+
+- **Sudhanshu Kumar** ([@Sudhanshu7393](https://github.com/Sudhanshu7393)) — Lead Architect & Full-Stack Developer
+- **Tanishq** ([@Tanishq-7777](https://github.com/Tanishq-7777)) — Contributor & AI Pipeline Developer
+- **Suryansh Kumar** ([@SuryanshKumar001](https://github.com/SuryanshKumar001)) — Contributor & Infrastructure Engineer
+
+---
+
+## Key Prompts Used & Development Iterations
 
 ### 1. Initial Project Brief
 ```
@@ -35,69 +34,57 @@ repeatedly does the following without any further human input:
 8. REPEAT autonomously every N seconds/minutes without any human input
 ```
 
-### 2. Tech Stack Switch
+### 2. Provider Flexibility
 ```
 anthropic ki jagh groq key use nahi kar sakte?
 ```
-→ AI switched entire backend from Anthropic Claude to Groq (llama-3.3-70b-versatile) + DuckDuckGo search
+→ Switched LLM provider to Groq (`llama-3.3-70b-versatile` & `llama-3.1-8b-instant`) with automatic failover.
 
-### 3. Better Search API
+### 3. Search Provider Selection
 ```
 agar isse best ho koi to btaao use karunga and jo bta rhe likhega wo kahi likh nahi rha
 ```
-→ AI recommended and implemented Tavily Search API (purpose-built for AI agents, free tier)
+→ Recommended & implemented Tavily API, and later added a 3-tiered perpetual fallback system.
 
-### 4. Debugging Rate Limits
+### 4. Rate-Limit & Token Quota Resolution
 ```
-[screenshot of live frontend showing 0 posts]
+[screenshot showing 0 posts and Groq TPD rate limit error 429]
+permanent solution btaao iska ya fir model change karna sahi hoga?
 ```
-→ AI diagnosed Groq 429 rate limit errors, fixed by switching from parallel to sequential scoring with 6s delays
+→ Fixed Groq rate limits by switching default model to `llama-3.1-8b-instant` (500K TPD) and adding self-healing fallback when 429 or 413 token errors occur.
 
-### 5. Understanding the System
+### 5. Multi-Tiered Perpetual Search Fallback
 ```
-pehle ye project vistaar me mujhe hi samjhaao
+Tavily ka limited token thha shayad khatam ho gya h koi alternate option ho jo hmesha chalta rahe?
 ```
-→ AI explained entire architecture in Hindi — pipeline, modules, data flow, API design
+→ Implemented 3-Tiered Perpetual Search Fallback (Tavily → DuckDuckGo News → Google News RSS). If Tavily quota expires, the agent automatically falls back to free, unlimited DuckDuckGo and Google News RSS without human intervention.
+
+### 6. Responsive UI & Mobile Support
+```
+alag alag device like phone par, tablet par and all devices include karlo unpar unke accordingly aacha dikhe jo abhi dikh nahi raha
+```
+→ Redesigned `index.html` with Tailwind CSS responsive grid (`grid-cols-1 lg:grid-cols-[1fr_320px]`), touch-friendly buttons, mobile status pill, and text truncation wrappers for all devices.
 
 ---
 
-## What the AI Built
+## 🏛️ System Architecture & File Breakdown
 
-| File | Lines | Description |
-|------|-------|-------------|
-| `backend/core/topic_discovery.py` | ~250 | Tavily search + Groq structuring |
-| `backend/core/editorial_engine.py` | ~460 | 5-dimension scoring + duplicate detection |
-| `backend/core/content_generator.py` | ~200 | Persona-grounded post generation |
-| `backend/core/memory_manager.py` | ~180 | Async SQLite persistence |
-| `backend/core/pipeline.py` | ~220 | Pipeline orchestrator |
-| `backend/core/scheduler.py` | ~200 | Autonomous asyncio loop |
-| `backend/core/persona_manager.py` | ~80 | ARIA persona loader |
-| `backend/api/routes.py` | ~120 | FastAPI endpoints |
-| `backend/api/schemas.py` | ~60 | Pydantic response models |
-| `backend/main.py` | ~110 | App factory + lifespan |
-| `backend/config.py` | ~90 | Pydantic-settings config |
-| `frontend/index.html` | ~600 | Dark SPA — live feed + countdown |
-| `backend/persona.json` | ~60 | ARIA persona definition |
-
-**Total: ~2,600+ lines of production-quality code, zero boilerplate copied from templates.**
+| File | Description |
+|------|-------------|
+| `backend/core/topic_discovery.py` | 3-Tier Search (Tavily → DDG → Google RSS) + Groq structuring |
+| `backend/core/editorial_engine.py` | 5-Dimension scoring + duplicate checking + model fallback |
+| `backend/core/content_generator.py` | Persona post generation + length validation + model fallback |
+| `backend/core/memory_manager.py` | Async SQLite database manager with WAL mode |
+| `backend/core/pipeline.py` | Stateless pipeline orchestrator |
+| `backend/core/scheduler.py` | Autonomous background asyncio loop with resilient timer state |
+| `backend/api/routes.py` | FastAPI endpoints (`/init`, `/status`, `/feed`, `/rejected`, `/trigger`) |
+| `frontend/index.html` | Ultra-responsive SPA — dark theme, live countdown ring, status panel |
 
 ---
 
-## Architecture Decisions Made by AI
+## 🔒 Verification & Compliance
 
-1. **SQLite over PostgreSQL** — "WAL mode gives safe concurrent reads without ORM overhead for a hackathon scope"
-2. **asyncio.to_thread for sync SDK calls** — "Keeps FastAPI event loop responsive while Groq SDK (sync) runs in executor"
-3. **Sequential scoring with delays** — "Groq free tier = 12K TPM; parallel calls hit limit instantly; 6s gaps solve it"
-4. **Persona injected verbatim each call** — "LLM has no memory between calls; inject full voice block every time to prevent drift"
-5. **/feed is read-only by design** — "GET endpoints never generate; only scheduler creates posts; proven by architecture"
-6. **Tavily over DuckDuckGo** — "DuckDuckGo library is unofficial and rate-limited; Tavily has official API with 48h date filter"
-
----
-
-## Live Demo Evidence
-
-- Agent runs autonomously every 90 seconds
-- Real posts generated from real Tavily news search
-- 26+ topics rejected with full editorial rationale logged
-- Published posts include source URLs from real publications (Bloomberg, SiliconAngle, etc.)
-- `/feed` endpoint verified read-only (multiple GET calls produce no new posts)
+- **Read-Only `/feed`**: `GET /api/agent/feed` reads strictly from SQLite memory.
+- **Fail-Safe Loop**: Each background cycle is wrapped in try/except blocks so a failed cycle never stops the loop.
+- **Perpetual Free Search**: 3-tiered fallback ensures discovery never stops even if Tavily API quota expires.
+- **Self-Healing LLM Calls**: Rate limit 429/413 errors automatically trigger instant fallback to `llama-3.1-8b-instant`.
