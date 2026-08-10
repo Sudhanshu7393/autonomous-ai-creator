@@ -51,11 +51,11 @@ class DiscoveredTopic:
 # ─────────────────────────────────────────────────────────────────────────────
 
 _SEARCH_QUERIES = [
-    "latest AI artificial intelligence breakthrough news",
-    "new large language model LLM release benchmark 2025",
-    "AI safety alignment research paper published",
-    "open source AI model announced today",
-    "AI infrastructure tooling agentic systems news",
+    "latest artificial intelligence AI news today 2026",
+    "new LLM large language model release benchmark 2026",
+    "AI agent autonomous system enterprise breakthrough 2026",
+    "open source AI model release announced 2026",
+    "AI infrastructure chip GPU tooling news 2026",
 ]
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -235,7 +235,7 @@ class TopicDiscoveryService:
             all_results: list[dict[str, Any]] = []
             seen_urls: set[str] = set()
 
-            queries = ["artificial intelligence breakthrough", "agentic ai enterprise", "large language model research"]
+            queries = ["artificial intelligence news 2026", "agentic ai breakthrough 2026", "large language model release 2026", "open source AI 2026"]
             for q in queries:
                 try:
                     encoded_q = urllib.parse.quote(q)

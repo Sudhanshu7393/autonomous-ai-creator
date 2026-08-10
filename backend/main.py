@@ -160,15 +160,13 @@ def create_app() -> FastAPI:
     # ── API routes ─────────────────────────────────────────────────────────
     app.include_router(router)
 
-    # ── Frontend static file ───────────────────────────────────────────────
-    frontend_dir = Path(__file__).parent.parent / "frontend"
     if frontend_dir.exists():
-        @app.get("/", include_in_schema=False)
+        @app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
         async def serve_frontend():
             return FileResponse(frontend_dir / "index.html")
 
-    # ── Health check ───────────────────────────────────────────────────────
-    @app.get("/health", include_in_schema=False)
+    # ── Health check (supports GET & HEAD for UptimeRobot) ─────────────────
+    @app.api_route("/health", methods=["GET", "HEAD"], include_in_schema=False)
     async def health():
         return {"status": "ok"}
 

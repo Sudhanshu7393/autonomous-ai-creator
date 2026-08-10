@@ -127,8 +127,9 @@ async def trigger_cycle(
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-@router.get(
+@router.api_route(
     "/feed",
+    methods=["GET", "HEAD"],
     response_model=FeedResponse,
     summary="Get all published posts",
     description=(
@@ -169,8 +170,9 @@ async def get_feed(
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-@router.get(
+@router.api_route(
     "/status",
+    methods=["GET", "HEAD"],
     response_model=StatusResponse,
     summary="Get agent scheduler status",
     description="Returns live scheduler state including countdown to next cycle.",
@@ -203,8 +205,9 @@ async def get_status(
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-@router.get(
+@router.api_route(
     "/rejected",
+    methods=["GET", "HEAD"],
     response_model=RejectedFeedResponse,
     summary="Get all rejected topics",
     description=(
