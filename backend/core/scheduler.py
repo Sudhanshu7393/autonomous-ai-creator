@@ -48,6 +48,7 @@ class SchedulerState:
     last_cycle_topic: str | None = None
     started_at: datetime | None = None
     agent_name: str = "ARIA"
+    last_heartbeat_at: datetime | None = None
 
     def seconds_until_next(self) -> float:
         from backend.config import get_settings
@@ -117,6 +118,7 @@ class Scheduler:
         )
         _state.is_running = True
         _state.started_at = datetime.now(timezone.utc)
+        _state.last_heartbeat_at = datetime.now(timezone.utc)
         _state.agent_name = self._persona_manager.persona.name
 
         logger.info(
@@ -142,10 +144,12 @@ class Scheduler:
 
     async def _loop(self) -> None:
         """
-        The main autonomous loop. Runs until stop_event is set.
-        Each iteration is fully isolated — exceptions are caught and logged.
+        Main autonomous execution loop.
+        Runs every `interval` seconds, stopping cleanly on `_stop_event`.
+        Auto-pauses if no visitor heartbeat received for >45 seconds.
         """
-        interval = self._settings.cycle_interval_seconds
+        settings = get_settings()
+        interval = float(settings.cycle_interval_seconds)
         logger.info(
             "Autonomous loop entering",
             extra={"interval": interval, "persona": _state.agent_name},
@@ -157,7 +161,6 @@ class Scheduler:
         while not self._stop_event.is_set():
             # Schedule the next cycle
             next_at = datetime.now(timezone.utc).replace(microsecond=0)
-            from datetime import timedelta
             next_at = datetime.now(timezone.utc) + timedelta(seconds=interval)
             _state.next_cycle_at = next_at
 
@@ -169,12 +172,20 @@ class Scheduler:
                 },
             )
 
-            # Wait with short ticks so stop_event is checked frequently
+            # Wait with short ticks so stop_event & heartbeats are checked frequently
             elapsed = 0.0
             tick = 5.0  # seconds per tick
             while elapsed < interval and not self._stop_event.is_set():
                 await asyncio.sleep(min(tick, interval - elapsed))
                 elapsed += tick
+
+                # Check visitor heartbeat inactivity — auto-pause after 45s of no visitors
+                if _state.last_heartbeat_at is not None:
+                    idle = (datetime.now(timezone.utc) - _state.last_heartbeat_at).total_seconds()
+                    if idle > 45.0:
+                        logger.info("No active website visitors for >45s — auto-pausing background agent to save API limits")
+                        self._stop_event.set()
+                        break
 
             if self._stop_event.is_set():
                 break

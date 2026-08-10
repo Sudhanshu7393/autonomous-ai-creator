@@ -144,6 +144,33 @@ async def stop_agent(
     }
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# POST /api/agent/heartbeat
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@router.post(
+    "/heartbeat",
+    response_model=dict[str, Any],
+    status_code=status.HTTP_200_OK,
+    summary="Register active visitor heartbeat",
+    description="Keeps the autonomous background loop active while visitors are on the site. Auto-resumes if paused.",
+)
+async def visitor_heartbeat(
+    scheduler=Depends(get_scheduler),
+) -> dict[str, Any]:
+    state = get_state()
+    state.last_heartbeat_at = datetime.now(timezone.utc)
+    if not state.is_running:
+        scheduler.start()
+        logger.info("Active visitor detected — auto-resuming autonomous agent")
+    return {
+        "status": "active",
+        "is_running": state.is_running,
+        "message": "Visitor heartbeat registered.",
+    }
+
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # GET /api/agent/feed

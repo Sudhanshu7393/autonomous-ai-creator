@@ -777,17 +777,31 @@ async function exportJSON(type) {
   } catch(e) { console.error('Export failed', e); }
 }
 
-// ── Polling schedule ───────────────────────────────────────────
+// ── Visitor Heartbeat & Auto-Pause ─────────────────────────────
+async function sendHeartbeat() {
+  if (document.visibilityState === 'visible') {
+    try {
+      await fetch(`${API}/api/agent/heartbeat`, { method: 'POST' });
+    } catch(e) { /* ignore network error */ }
+  }
+}
 
-// Status: every 5 seconds (keeps countdown accurate)
-// Feed:   every 20 seconds (new posts are rare)
-// Rejected: only when drawer is open, on feed poll
+// Send initial heartbeat on page load & every 10s while tab is active
+sendHeartbeat();
+setInterval(sendHeartbeat, 10_000);
 
-setInterval(fetchStatus, 5_000);
-setInterval(() => {
-  fetchFeed();
-  if (drawerOpen) fetchRejected();
-}, 20_000);
+// Detect when user leaves tab / closes website
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    sendHeartbeat();
+    fetchStatus();
+  } else {
+    // User switched tab or closed page — send immediate pause request
+    try {
+      navigator.sendBeacon(`${API}/api/agent/stop`);
+    } catch(e) {}
+  }
+});
 
 // Initial load
 (async () => {
