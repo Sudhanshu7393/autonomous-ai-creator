@@ -550,19 +550,27 @@ function updateStatusUI(status) {
   // Pill
   const pill = document.getElementById('status-pill');
   const pillText = document.getElementById('status-pill-text');
+  const pillDot = pill ? pill.querySelector('span') : null;
   const pillMob = document.getElementById('status-pill-mobile');
   const pillMobText = document.getElementById('status-pill-text-mobile');
+  const pillMobDot = pillMob ? pillMob.querySelector('span') : null;
 
   if (isRunning) {
-    if (pill) { pill.style.borderColor = 'rgba(99,102,241,0.4)'; pill.style.background = 'rgba(99,102,241,0.08)'; }
-    if (pillText) { pillText.style.color = '#a5b4fc'; pillText.textContent = `${status.agent} · AUTONOMOUS`; }
-    if (pillMob) { pillMob.style.borderColor = 'rgba(99,102,241,0.4)'; pillMob.style.background = 'rgba(99,102,241,0.08)'; }
-    if (pillMobText) { pillMobText.style.color = '#a5b4fc'; pillMobText.textContent = `LIVE`; }
+    if (pill) { pill.style.borderColor = 'rgba(34,197,94,0.4)'; pill.style.background = 'rgba(34,197,94,0.08)'; }
+    if (pillText) { pillText.style.color = '#4ade80'; pillText.textContent = `${status.agent} · AUTONOMOUS`; }
+    if (pillDot) { pillDot.style.background = '#22c55e'; pillDot.style.boxShadow = '0 0 10px #22c55e'; pillDot.className = 'w-2 h-2 rounded-full pulse inline-block'; }
+
+    if (pillMob) { pillMob.style.borderColor = 'rgba(34,197,94,0.4)'; pillMob.style.background = 'rgba(34,197,94,0.08)'; }
+    if (pillMobText) { pillMobText.style.color = '#4ade80'; pillMobText.textContent = `LIVE`; }
+    if (pillMobDot) { pillMobDot.style.background = '#22c55e'; pillMobDot.style.boxShadow = '0 0 10px #22c55e'; pillMobDot.className = 'w-2 h-2 rounded-full pulse inline-block'; }
   } else {
     if (pill) { pill.style.borderColor = 'var(--border)'; pill.style.background = 'var(--surface2)'; }
     if (pillText) { pillText.style.color = 'var(--muted)'; pillText.textContent = 'offline'; }
+    if (pillDot) { pillDot.style.background = 'var(--muted)'; pillDot.style.boxShadow = 'none'; pillDot.className = 'w-2 h-2 rounded-full inline-block'; }
+
     if (pillMob) { pillMob.style.borderColor = 'var(--border)'; pillMob.style.background = 'var(--surface2)'; }
     if (pillMobText) { pillMobText.style.color = 'var(--muted)'; pillMobText.textContent = 'OFFLINE'; }
+    if (pillMobDot) { pillMobDot.style.background = 'var(--muted)'; pillMobDot.style.boxShadow = 'none'; pillMobDot.className = 'w-2 h-2 rounded-full inline-block'; }
   }
 
   // Toggle Agent Button
