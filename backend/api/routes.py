@@ -121,6 +121,29 @@ async def trigger_cycle(
     }
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# POST /api/agent/stop
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@router.post(
+    "/stop",
+    response_model=dict[str, Any],
+    status_code=status.HTTP_200_OK,
+    summary="Pause / stop autonomous agent execution",
+    description="Pauses the autonomous background loop until re-initialized.",
+)
+async def stop_agent(
+    scheduler=Depends(get_scheduler),
+) -> dict[str, Any]:
+    scheduler.stop()
+    logger.info("Agent execution paused via API")
+    return {
+        "status": "stopped",
+        "message": "Autonomous agent execution paused.",
+    }
+
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # GET /api/agent/feed

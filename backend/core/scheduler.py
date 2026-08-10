@@ -131,6 +131,7 @@ class Scheduler:
     def stop(self) -> None:
         """Signal the background loop to stop gracefully."""
         self._stop_event.set()
+        _state.is_running = False
         logger.info("Scheduler stop requested")
 
     async def trigger_immediate_cycle(self) -> None:

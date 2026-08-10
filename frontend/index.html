@@ -145,6 +145,13 @@
 
     <!-- Live status pill & Action buttons -->
     <div class="flex items-center justify-between sm:justify-end gap-2.5 sm:gap-3">
+      <button id="toggle-agent-btn" onclick="toggleAgentState()"
+              class="px-3 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+              style="background:var(--surface2); border:1px solid rgba(239,68,68,0.4); color:#ef4444;">
+        <span id="toggle-agent-icon">⏸</span>
+        <span id="toggle-agent-text">Pause Agent</span>
+      </button>
+
       <button id="trigger-btn" onclick="triggerCycle()"
               class="flex-1 sm:flex-initial px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
               style="background: linear-gradient(135deg,#6366f1,#8b5cf6); color: white; border: none; box-shadow: 0 2px 10px rgba(99,102,241,0.3);">
@@ -384,6 +391,24 @@ async function initAgent() {
   }
 }
 
+// ── Toggle Pause / Resume Agent ───────────────────────────────
+async function toggleAgentState() {
+  const btn = document.getElementById('toggle-agent-btn');
+  if (btn) btn.disabled = true;
+  if (isRunning) {
+    try {
+      await fetch(`${API}/api/agent/stop`, { method: 'POST' });
+      await fetchStatus();
+    } catch(e) { console.error('Pause failed:', e); }
+  } else {
+    try {
+      await fetch(`${API}/api/agent/init`, { method: 'POST' });
+      await fetchStatus();
+    } catch(e) { console.error('Resume failed:', e); }
+  }
+  if (btn) btn.disabled = false;
+}
+
 // ── Format helpers ─────────────────────────────────────────────
 function fmtTime(iso) {
   if (!iso) return '—';
@@ -540,6 +565,26 @@ function updateStatusUI(status) {
     if (pillMobText) { pillMobText.style.color = 'var(--muted)'; pillMobText.textContent = 'OFFLINE'; }
   }
 
+  // Toggle Agent Button
+  const toggleBtn = document.getElementById('toggle-agent-btn');
+  const toggleText = document.getElementById('toggle-agent-text');
+  const toggleIcon = document.getElementById('toggle-agent-icon');
+  if (isRunning) {
+    if (toggleText) toggleText.textContent = 'Pause Agent';
+    if (toggleIcon) toggleIcon.textContent = '⏸';
+    if (toggleBtn) {
+      toggleBtn.style.borderColor = 'rgba(239,68,68,0.4)';
+      toggleBtn.style.color = '#ef4444';
+    }
+  } else {
+    if (toggleText) toggleText.textContent = 'Resume Agent';
+    if (toggleIcon) toggleIcon.textContent = '▶';
+    if (toggleBtn) {
+      toggleBtn.style.borderColor = 'rgba(34,197,94,0.4)';
+      toggleBtn.style.color = '#22c55e';
+    }
+  }
+
   // Live dot
   const dot = document.getElementById('live-dot');
   const label = document.getElementById('live-label');
@@ -552,7 +597,7 @@ function updateStatusUI(status) {
     dot.style.background = 'var(--muted)';
     dot.classList.remove('pulse');
     label.style.color = 'var(--muted)';
-    label.textContent = 'Offline';
+    label.textContent = 'Paused / Offline';
   }
 
   // Stats
