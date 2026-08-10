@@ -54,19 +54,23 @@ _SYSTEM_PROMPT = """\
 
 ---
 
-YOUR TASK: Write one social-media post about the topic below, strictly following every rule above.
+YOUR TASK: Write one high-impact, beautifully structured social-media post about the topic below.
+
+STRUCTURE REQUIREMENTS (use clean line breaks between sections):
+1. OPENER: Lead with a strong opener like {openers}.
+2. CORE FACTS: Provide 1-2 concise lines with concrete numbers, benchmarks, or technical details.
+3. TAKEAWAY: Include a clear '👉 Key Takeaway:' or '💡 Why It Matters:' for AI engineers and technical founders.
+4. HASHTAGS: Exactly {hashtag_count} relevant hashtags at the very bottom.
 
 IMPORTANT CONSTRAINTS:
-- The post_text field must be {max_chars} characters or fewer (count precisely).
-- Include exactly {hashtag_count} hashtags at the end of the post_text.
+- The post_text field must be {max_chars} characters or fewer.
 - Never use any of these phrases: {forbidden}.
-- Start with one of these openers (or a close variant): {openers}.
 - Do NOT include the title in the post_text — keep it as a separate field.
 
 OUTPUT FORMAT — respond ONLY with this JSON (no markdown fences, no extra text):
 {{
   "title": "<short editorial title, 5–12 words>",
-  "post_text": "<the complete post including hashtags, {max_chars} chars max>",
+  "post_text": "<the complete formatted post with line breaks and hashtags, {max_chars} chars max>",
   "hashtags": ["#Tag1", "#Tag2", "#Tag3"]
 }}
 """
@@ -77,7 +81,7 @@ SUMMARY: {summary}
 SOURCE: {source_name} — {source_url}
 RECENCY: {recency_hint}
 
-Write the post now. Remember: lead with insight, be specific, end with an implication or question.
+Write the post now with clean line-separated sections and a sharp technical takeaway.
 """
 
 
