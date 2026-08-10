@@ -157,16 +157,27 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    # ── HEAD request handler (for UptimeRobot and health monitors) ────────
+    @app.middleware("http")
+    async def handle_head_requests(request, call_next):
+        if request.method == "HEAD":
+            request.scope["method"] = "GET"
+            response = await call_next(request)
+            response.body = b""
+            return response
+        return await call_next(request)
+
     # ── API routes ─────────────────────────────────────────────────────────
     app.include_router(router)
 
+    frontend_dir = Path(__file__).parent.parent / "frontend"
     if frontend_dir.exists():
-        @app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
+        @app.get("/", include_in_schema=False)
         async def serve_frontend():
             return FileResponse(frontend_dir / "index.html")
 
-    # ── Health check (supports GET & HEAD for UptimeRobot) ─────────────────
-    @app.api_route("/health", methods=["GET", "HEAD"], include_in_schema=False)
+    # ── Health check ───────────────────────────────────────────────────────
+    @app.get("/health", include_in_schema=False)
     async def health():
         return {"status": "ok"}
 
