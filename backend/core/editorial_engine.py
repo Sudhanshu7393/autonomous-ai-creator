@@ -385,9 +385,10 @@ class EditorialDecisionEngine:
                 )
                 return response.choices[0].message.content or ""
             except Exception as err:
-                logger.warning(f"Editorial scoring failed on {model_to_use}, falling back to llama-3.1-8b-instant: {err}")
+                fallback_model = "llama-3.3-70b-versatile" if model_to_use == "llama-3.1-8b-instant" else "llama-3.1-8b-instant"
+                logger.warning(f"Editorial scoring failed on {model_to_use}, falling back to {fallback_model}: {err}")
                 response = self._client.chat.completions.create(
-                    model="llama-3.1-8b-instant",
+                    model=fallback_model,
                     max_tokens=1024,
                     temperature=0.1,
                     messages=[
